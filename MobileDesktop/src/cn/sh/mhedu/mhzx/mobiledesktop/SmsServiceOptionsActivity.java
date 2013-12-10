@@ -14,8 +14,6 @@ import android.view.View.OnClickListener;
 import android.view.Window;
 import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
 
-import com.easymorse.R;
-
 public class SmsServiceOptionsActivity extends Activity {
 	
 	private static final String FILE_FIRST_OPEN = "file_first_open";

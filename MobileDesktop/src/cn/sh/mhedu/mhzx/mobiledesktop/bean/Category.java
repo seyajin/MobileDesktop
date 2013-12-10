@@ -1,7 +1,6 @@
 package cn.sh.mhedu.mhzx.mobiledesktop.bean;
 
-import com.easymorse.R;
-import com.easymorse.R.drawable;
+import cn.sh.mhedu.mhzx.mobiledesktop.R;
 
 public class Category {
 	private Integer id;

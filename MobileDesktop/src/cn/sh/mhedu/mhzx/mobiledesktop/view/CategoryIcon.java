@@ -7,8 +7,7 @@ import android.view.Gravity;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import com.easymorse.R;
+import cn.sh.mhedu.mhzx.mobiledesktop.R;
 
 public class CategoryIcon extends LinearLayout {
 	

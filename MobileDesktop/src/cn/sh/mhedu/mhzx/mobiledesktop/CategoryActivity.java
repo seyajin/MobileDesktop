@@ -30,8 +30,6 @@ import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemEvenView;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemOddView;
 
-import com.easymorse.R;
-
 public class CategoryActivity extends Activity {
 	private static final String TAG = "ApplicationCategoryActivity";
 	

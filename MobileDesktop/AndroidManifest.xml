@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.easymorse"
+    package="cn.sh.mhedu.mhzx.mobiledesktop"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -11,7 +11,7 @@
         android:icon="@drawable/icon"
         android:label="@string/app_name" >
         <activity
-            android:name="com.mhedu.SmsServiceOptionsActivity"
+            android:name=".SmsServiceOptionsActivity"
             android:label="@string/app_name"
             android:launchMode="singleInstance"
             android:screenOrientation="landscape" >
@@ -23,16 +23,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.mhedu.CategoryActivity"
+            android:name=".CategoryActivity"
             android:screenOrientation="landscape" >
         </activity>
         <activity
-            android:name="com.mhedu.ApplicationActivity"
+            android:name=".ApplicationActivity"
             android:screenOrientation="landscape" >
         </activity>
 
         <receiver
-            android:name="com.mhedu.SmsServiceBootReceiver"
+            android:name=".SmsServiceBootReceiver"
             android:enabled="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED" >
             <intent-filter>

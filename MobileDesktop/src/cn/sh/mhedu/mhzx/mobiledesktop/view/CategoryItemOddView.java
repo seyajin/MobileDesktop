@@ -7,8 +7,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.LinearLayout;
 import cn.sh.mhedu.mhzx.mobiledesktop.ApplicationActivity;
-
-import com.easymorse.R;
+import cn.sh.mhedu.mhzx.mobiledesktop.R;
 
 public class CategoryItemOddView extends LinearLayout implements OnClickListener {
 	private CategoryIcon mCategoryIconOne;

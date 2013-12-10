@@ -48,8 +48,6 @@ import cn.sh.mhedu.mhzx.mobiledesktop.bean.CompAppInfo;
 import cn.sh.mhedu.mhzx.mobiledesktop.parser.ParserBySAX;
 import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
 
-import com.easymorse.R;
-
 public class ApplicationActivity extends Activity implements OnItemClickListener {
 	private static final String TAG = "ApplicationActivity";
 
