@@ -59,7 +59,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	private static final String METHOD_NAME_CHECK_DEVICE = "doDeviceStatusAction";
 	private static final String SOAP_ACTION_CHECK_DEVICE = "http://device.justsy.com/doDeviceStatusAction";
 	
-	private static final String FILE_PATH = "easymores";
+	private static final String FILE_PATH = "mobiledesktop";
 	
 	private static enum PACKAGE_TYPE {iPhoneEnterprisePkg, iPhoneAppStorePkg, AndroidEnterprisePkg, MediaPkg};
 
@@ -256,6 +256,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			}
 		} else {
 			// DO nothing
+			Toast.makeText(this, "对不起，该类型应用不支持", Toast.LENGTH_LONG).show();
 		}
 	}
 	
