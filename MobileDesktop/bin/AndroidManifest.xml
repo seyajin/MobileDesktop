@@ -11,7 +11,7 @@
         android:icon="@drawable/icon"
         android:label="@string/app_name" >
         <activity
-            android:name=".SmsServiceOptionsActivity"
+            android:name="com.mhedu.SmsServiceOptionsActivity"
             android:label="@string/app_name"
             android:launchMode="singleInstance"
             android:screenOrientation="landscape" >
@@ -23,16 +23,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".CategoryActivity"
+            android:name="com.mhedu.CategoryActivity"
             android:screenOrientation="landscape" >
         </activity>
         <activity
-            android:name=".ApplicationActivity"
+            android:name="com.mhedu.ApplicationActivity"
             android:screenOrientation="landscape" >
         </activity>
 
         <receiver
-            android:name=".SmsServiceBootReceiver"
+            android:name="com.mhedu.SmsServiceBootReceiver"
             android:enabled="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED" >
             <intent-filter>
