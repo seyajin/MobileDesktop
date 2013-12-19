@@ -17,6 +17,7 @@ public class CompAppInfo {
 	private String createdTime;
 	private String lastModified;
 	private String packageUrl;
+	private String cfbundleidentifier;
 
 	public String getParentCategoryName() {
 		return parentCategoryName;
@@ -130,6 +131,14 @@ public class CompAppInfo {
 		this.packageUrl = packageUrl;
 	}
 	
+	public String getCFBundleIdentifier() {
+		return cfbundleidentifier;
+	}
+	
+	public void setCFBundleIdentifier(String cfbundleidentifier) {
+		this.cfbundleidentifier = cfbundleidentifier;
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -159,8 +168,9 @@ public class CompAppInfo {
 		sb.append("lastModified:" + lastModified);
 		sb.append(",");
 		sb.append("packageUrl:" + packageUrl);
+		sb.append(",");
+		sb.append("cfbundleidentifier:" + cfbundleidentifier);
 		sb.append(".");
-		
 		return sb.toString();
 	}
 }

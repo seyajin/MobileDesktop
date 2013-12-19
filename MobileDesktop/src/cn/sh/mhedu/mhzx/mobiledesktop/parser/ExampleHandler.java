@@ -77,6 +77,8 @@ public class ExampleHandler extends DefaultHandler {
 			mCompAppInfo.setPackagePeriod(mElementName);
 		} else if ("PackageCode".equalsIgnoreCase(localName)) {
 			mCompAppInfo.setPackageCode(mElementName);
+		} else if ("CFBundleIdentifier".equalsIgnoreCase(localName)) {
+			mCompAppInfo.setCFBundleIdentifier(mElementName);
 		}
 		
 		if ("StatusInfo".endsWith(localName)) {

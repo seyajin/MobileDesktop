@@ -215,7 +215,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
 			List<ResolveInfo> activityList = packageManager.queryIntentActivities(mainIntent, 0);
 			
-			Intent intent = getLaunchIntent(appInfo.getPackageName(), activityList);
+			Intent intent = getLaunchIntent(appInfo.getCFBundleIdentifier(), activityList);
 			
 			Log.d(TAG, "intent = " + intent);
 			if (intent == null) {
