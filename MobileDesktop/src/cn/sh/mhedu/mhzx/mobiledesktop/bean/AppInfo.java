@@ -6,6 +6,7 @@ public class AppInfo {
 	public String appName;
 	public String packageName;
 	public String versionName;
+	public String cfbundleidentifier;
 	public int versionCode = 0;
 	public Drawable appIcon;
 	
@@ -16,6 +17,7 @@ public class AppInfo {
 		return "AppInfo : appName = " + appName 
 				+ ", packageName = " + packageName 
 				+ ", versionName = " + versionName 
+				+ ", cfbundleidentifier = " + cfbundleidentifier
 				+ ", versionCode = " + versionCode
 				+ ", appIcon = " + appIcon
 				+ ", appDownloadUrl = " + appDownloadUrl;
