@@ -262,8 +262,8 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	
 	private Intent getLaunchIntent(String packageName, List<ResolveInfo> activityList) {
 		for (ResolveInfo info : activityList) {
-			if (info.activityInfo.name.endsWith(packageName)) {
-				Intent intent = getPackageManager().getLaunchIntentForPackage(info.activityInfo.packageName);
+			if (info.activityInfo.packageName.endsWith(packageName)) {
+				Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
 				return intent;
 			}
 		}

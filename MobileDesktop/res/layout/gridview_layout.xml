@@ -3,13 +3,14 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="@drawable/content_bg"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:gravity="center" >
 
     <TextView
         android:id="@+id/category_title"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/bg_dark_blue"
         android:gravity="center"
         android:textColor="@android:color/white"
@@ -18,11 +19,9 @@
 
     <GridView
         android:id="@+id/category_gridview"
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="0dp"
-        android:layout_marginBottom="100dp"
-        android:layout_marginLeft="150dp"
-        android:layout_marginRight="150dp"
+        android:layout_marginBottom="10dp"
         android:layout_weight="1"
         android:horizontalSpacing="5dp"
         android:numColumns="5"
