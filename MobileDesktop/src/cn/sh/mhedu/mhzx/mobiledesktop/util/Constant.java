@@ -10,5 +10,5 @@ public class Constant {
 	public static final String KEY_STATUS = "key_status";
 	public static final String KEY_XML_STATUS_CHECK = "key_xml_status_check";
 	public static final String KEY_STATUS_CHECK_TIME = "key_status_check_time";
-
+	
 }

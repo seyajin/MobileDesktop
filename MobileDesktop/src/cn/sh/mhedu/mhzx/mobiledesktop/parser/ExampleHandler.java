@@ -14,6 +14,8 @@ import cn.sh.mhedu.mhzx.mobiledesktop.bean.CompAppInfo;
 public class ExampleHandler extends DefaultHandler {
 	private static final String TAG = "ExampleHandler";
 
+	private static enum PACKAGE_TYPE {iPhoneEnterprisePkg, iPhoneAppStorePkg, AndroidEnterprisePkg, MediaPkg};
+
 	private List<Category> mCategoriesList;
 	private List<CompAppInfo> mCompAppInfosList;
 	private String mElementName;// ±£´æÔªËØÃû³Æ
@@ -21,6 +23,7 @@ public class ExampleHandler extends DefaultHandler {
 	private CompAppInfo mCompAppInfo;
 	private String mName;
 	private String mDeviceStatus;
+	
 
 	public void startDocument() throws SAXException {
 		mCategoriesList = new ArrayList<Category>();
@@ -47,10 +50,21 @@ public class ExampleHandler extends DefaultHandler {
 	public void endElement(String namespaceURI, String localName, String qName)
 			throws SAXException {
 		if (localName.equals("Category")) {
-			mCategoriesList.add(mCategory);
+			if (hasChildren(mName)) {
+				Log.d(TAG, "not empty category : " + mName);
+				mCategoriesList.add(mCategory);
+			} else {
+				Log.d(TAG, "empty category : " + mName);
+			}
 		} else if (localName.equals("row")) {
-			mCompAppInfo.setParentCategoryName(mName);
-			mCompAppInfosList.add(mCompAppInfo);
+			Log.d(TAG, "PackageType = " + mCompAppInfo.getPackageType());
+			if (PACKAGE_TYPE.iPhoneAppStorePkg.name().equalsIgnoreCase(mCompAppInfo.getPackageType())
+					|| PACKAGE_TYPE.iPhoneEnterprisePkg.name().equalsIgnoreCase(mCompAppInfo.getPackageType())) {
+				Log.d(TAG, "ios app.");
+			} else {
+				mCompAppInfo.setParentCategoryName(mName);
+				mCompAppInfosList.add(mCompAppInfo);
+			}
 		} else if (localName.equals("PackageName")) {
 			mCompAppInfo.setPackageName(mElementName);
 		} else if ("PackageId".equals(localName)) {
@@ -102,6 +116,15 @@ public class ExampleHandler extends DefaultHandler {
 	
 	public String getDeviceStatus() {
 		return mDeviceStatus;
+	}
+	
+	private boolean hasChildren(String parentCategoryName) {
+		for (CompAppInfo appInfo : mCompAppInfosList) {
+			if (appInfo.getParentCategoryName().equalsIgnoreCase(parentCategoryName)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

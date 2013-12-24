@@ -31,7 +31,7 @@ import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemEvenView;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemOddView;
 
 public class CategoryActivity extends Activity {
-	private static final String TAG = "ApplicationCategoryActivity";
+	private static final String TAG = "CategoryActivity";
 	
 	private static final String URL         = "http://180.169.39.4:8080/JustsyAppService/DeviceManagerService?wsdl";
 	private static final String NAMESPACE   = "http://device.justsy.com/";
@@ -73,6 +73,7 @@ public class CategoryActivity extends Activity {
 	
 	private void initContentView() {
 		int totalSize = mCategoryList.size();
+		Log.d(TAG, "CategoryList size = " + mCategoryList.size());
 		int size = totalSize;
 		int position = 0;
 		int rows = 1;
@@ -101,7 +102,7 @@ public class CategoryActivity extends Activity {
 					if (position + i < totalSize) {
 						oddView.initCategoryIcon(i, mCategoryList.get(position + i).imageResId, mCategoryList.get(position + i).getName());
 					} else {
-						oddView.hideCategoryIcon(position);
+						oddView.hideCategoryIcon(i);
 					}
 				}
 				
