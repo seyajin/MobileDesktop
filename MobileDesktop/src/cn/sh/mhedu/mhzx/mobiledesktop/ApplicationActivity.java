@@ -51,14 +51,6 @@ import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
 public class ApplicationActivity extends Activity implements OnItemClickListener {
 	private static final String TAG = "ApplicationActivity";
 
-	private static final String URL         = "http://180.169.39.4:8080/JustsyAppService/DeviceManagerService?wsdl";
-	private static final String NAMESPACE   = "http://device.justsy.com/";
-	private static final String METHOD_NAME = "doGetCompAppAction";
-	private static final String SOAP_ACTION = "http://device.justsy.com/doGetCompAppAction";
-	
-	private static final String METHOD_NAME_CHECK_DEVICE = "doDeviceStatusAction";
-	private static final String SOAP_ACTION_CHECK_DEVICE = "http://device.justsy.com/doDeviceStatusAction";
-	
 	private static final String FILE_PATH = "mobiledesktop";
 	
 	private static enum PACKAGE_TYPE {iPhoneEnterprisePkg, iPhoneAppStorePkg, AndroidEnterprisePkg, MediaPkg};
@@ -162,18 +154,9 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	public List<CompAppInfo> getAllApps() throws Throwable {
 		String xml = "";
 		if (Connectivity.isNetworkConnected(this)) {
-			SoapObject soapObject = new SoapObject(NAMESPACE, METHOD_NAME);
-			soapObject.addProperty("arg0", "16");
-			SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-			envelope.dotNet = false;
-			envelope.setOutputSoapObject(soapObject);
-
-			AndroidHttpTransport httpTransport = new AndroidHttpTransport(URL);
 
 			try {
-				httpTransport.call(SOAP_ACTION, envelope);
-				SoapPrimitive soapPrimitive = (SoapPrimitive) envelope.getResponse();
-				xml = soapPrimitive.toString();
+//				xml = soapPrimitive.toString();
 				SharedPreferences mSharedPreferences = getSharedPreferences(Constant.FILE_XML_SAVING, 0);
 				SharedPreferences.Editor mEditor = mSharedPreferences.edit();
 				mEditor.putString(Constant.KEY_XML_APPLICATION, xml);
@@ -452,18 +435,10 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		if (Connectivity.isNetworkConnected(this)) {
 			String deviceId = Settings.System.getString(getContentResolver(),Settings.System.ANDROID_ID);
 			Log.d(TAG, "deviceId = " + deviceId);
-			SoapObject soapObject = new SoapObject(NAMESPACE, METHOD_NAME_CHECK_DEVICE);
-			soapObject.addProperty("arg0", deviceId);
-			SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-			envelope.dotNet = false;
-			envelope.setOutputSoapObject(soapObject);
 
-			AndroidHttpTransport httpTransport = new AndroidHttpTransport(URL);
 
 			try {
-				httpTransport.call(SOAP_ACTION_CHECK_DEVICE, envelope);
-				SoapPrimitive soapPrimitive = (SoapPrimitive) envelope.getResponse();
-				xml = soapPrimitive.toString();
+//				xml = soapPrimitive.toString();
 				SharedPreferences mSharedPreferences = getSharedPreferences(Constant.FILE_DEVICE_STATUS, Context.MODE_PRIVATE);
 				SharedPreferences.Editor mEditor = mSharedPreferences.edit();
 				mEditor.putString(Constant.KEY_XML_STATUS_CHECK, xml);

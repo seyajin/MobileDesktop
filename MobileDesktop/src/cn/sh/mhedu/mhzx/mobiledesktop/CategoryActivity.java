@@ -11,6 +11,10 @@ import org.ksoap2.serialization.SoapSerializationEnvelope;
 import org.ksoap2.transport.AndroidHttpTransport;
 import org.xml.sax.InputSource;
 
+import com.justsy.zeus.api.DefaultZeusClient;
+import com.justsy.zeus.api.request.AppPackageByUserNameGetRequest;
+import com.justsy.zeus.api.response.AppPackageByUserNameGetResponse;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -24,27 +28,24 @@ import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
+import cn.sh.mhedu.mhzx.mobiledesktop.bean.AppPackageResponse;
 import cn.sh.mhedu.mhzx.mobiledesktop.bean.Category;
+import cn.sh.mhedu.mhzx.mobiledesktop.parser.JsonParser;
 import cn.sh.mhedu.mhzx.mobiledesktop.parser.ParserBySAX;
 import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
+import cn.sh.mhedu.mhzx.mobiledesktop.utility.Constants;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemEvenView;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemOddView;
 
 public class CategoryActivity extends Activity {
 	private static final String TAG = "CategoryActivity";
 	
-	private static final String URL         = "http://180.169.39.4:8080/JustsyAppService/DeviceManagerService?wsdl";
-	private static final String NAMESPACE   = "http://device.justsy.com/";
-	private static final String METHOD_NAME = "doGetCompAppAction";
-	private static final String SOAP_ACTION = "http://device.justsy.com/doGetCompAppAction";
-
 	private static final int INIT_MAIN_CONTENT_VIEW = 0;
 
 	private TextView mCategoryTitle;
 	private LinearLayout mContentLayout;
 	private List<Category> mCategoryList;
 	private MyHandler mHandler;
-	
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -69,6 +70,7 @@ public class CategoryActivity extends Activity {
 		
 		new GetCategoryTask().execute();
 		Log.d(TAG, "onCreate end");
+		
 	}
 	
 	private void initContentView() {
@@ -179,19 +181,22 @@ public class CategoryActivity extends Activity {
 	private List<Category> getCategories() throws Throwable {
 		String xml = "";
 		if (Connectivity.isNetworkConnected(this)) {
-			SoapObject soapObject = new SoapObject(NAMESPACE, METHOD_NAME);
-			soapObject.addProperty("arg0", "16");
-
-			SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-			envelope.dotNet = false;
-			envelope.setOutputSoapObject(soapObject);
-
-			AndroidHttpTransport httpTransport = new AndroidHttpTransport(URL);
-
 			try {
-				httpTransport.call(SOAP_ACTION, envelope);
-				SoapPrimitive soapPrimitive = (SoapPrimitive) envelope.getResponse();
-				xml = soapPrimitive.toString();
+				DefaultZeusClient dzc = new DefaultZeusClient(Constants.URL, Constants.APK_KEY, Constants.SECRET);
+				
+				AppPackageByUserNameGetRequest request = new AppPackageByUserNameGetRequest();
+				request.setUsername("wanjiahua");
+				request.setTimestamp(System.currentTimeMillis());
+				
+				AppPackageByUserNameGetResponse response = dzc.execute(request);
+				
+				if (response.isSuccess()) {
+					
+				} else {
+					
+				}
+				
+				xml = response.getBody();
 
 				SharedPreferences mSharedPreferences = getSharedPreferences(Constant.FILE_XML_SAVING, Context.MODE_PRIVATE);
 				SharedPreferences.Editor mEditor = mSharedPreferences.edit();
@@ -206,19 +211,14 @@ public class CategoryActivity extends Activity {
 		}
 		
 		Log.d(TAG, "xml = " + xml);
-
-		ParserBySAX parserBySAX = new ParserBySAX();
-		StringReader read = new StringReader(xml);
-		InputSource source = new InputSource(read);
-		mCategoryList = parserBySAX.getCategories(source);
 		
-		// @debug add one category for testing begin
-//		Category category = new Category();
-//		category.imageResId = R.drawable.icon_line_one_4;
-//		category.setName("FOR TEST!");
-//		category.setId(1000);
-//		mCategoryList.add(category);
-		// @debug add one category for testing end
+		AppPackageResponse apr = JsonParser.jsonToObject(xml, AppPackageResponse.class);
+		Log.d(TAG, "apr = " + apr.toString());
+		
+//		ParserBySAX parserBySAX = new ParserBySAX();
+//		StringReader read = new StringReader(xml);
+//		InputSource source = new InputSource(read);
+//		mCategoryList = parserBySAX.getCategories(source);
 		
 		return mCategoryList;
 	}
