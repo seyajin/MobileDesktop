@@ -3,14 +3,8 @@ package cn.sh.mhedu.mhzx.mobiledesktop;
 import java.io.File;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-import org.ksoap2.SoapEnvelope;
-import org.ksoap2.serialization.SoapObject;
-import org.ksoap2.serialization.SoapPrimitive;
-import org.ksoap2.serialization.SoapSerializationEnvelope;
-import org.ksoap2.transport.AndroidHttpTransport;
 import org.xml.sax.InputSource;
 
 import android.app.Activity;
@@ -44,9 +38,18 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import cn.sh.mhedu.mhzx.mobiledesktop.bean.CompAppInfo;
+import cn.sh.mhedu.mhzx.mobiledesktop.bean.JsonAppInfo;
+import cn.sh.mhedu.mhzx.mobiledesktop.bean.JsonAppPackageResponse;
+import cn.sh.mhedu.mhzx.mobiledesktop.bean.JsonContent;
+import cn.sh.mhedu.mhzx.mobiledesktop.parser.JsonParser;
 import cn.sh.mhedu.mhzx.mobiledesktop.parser.ParserBySAX;
 import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
+import cn.sh.mhedu.mhzx.mobiledesktop.utility.Constants;
+import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryTag;
+
+import com.justsy.zeus.api.DefaultZeusClient;
+import com.justsy.zeus.api.request.AppPackageByDepartCodeGetRequest;
+import com.justsy.zeus.api.response.AppPackageByDepartCodeGetResponse;
 
 public class ApplicationActivity extends Activity implements OnItemClickListener {
 	private static final String TAG = "ApplicationActivity";
@@ -59,9 +62,10 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	private ApplicationAdapter mApplicationAdapter;
 	private DownloadManager mDownloadManager;
 	private TextView mApplicationTitle;
-	private List<CompAppInfo> mApplicationList = new ArrayList<CompAppInfo>();
-	private String mStringList;
-
+	private List<JsonAppInfo> mApplicationList = new ArrayList<JsonAppInfo>();
+	
+	private long mCategoryId;
+	
 	private long mEnqueue;
 
 	/** Called when the activity is first created. */
@@ -72,9 +76,13 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.gridview_layout);
 		
-		mStringList = getIntent().getStringExtra("ListString");
+		Bundle bundle = getIntent().getBundleExtra("ListString");
+		
+		CategoryTag tag = (CategoryTag) bundle.getSerializable("tag");
+		mCategoryId = tag.id;
+		
 		mApplicationTitle = (TextView) findViewById(R.id.category_title);
-		mApplicationTitle.setText(mStringList);
+		mApplicationTitle.setText(tag.name);
 		
 		mDownloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
 //		registerReceiver(new DownloadCompletedReceiver(), new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
@@ -151,12 +159,27 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		
 	}
 
-	public List<CompAppInfo> getAllApps() throws Throwable {
+	public List<JsonAppInfo> getAllApps() throws Throwable {
 		String xml = "";
 		if (Connectivity.isNetworkConnected(this)) {
 
 			try {
-//				xml = soapPrimitive.toString();
+				DefaultZeusClient dzc = new DefaultZeusClient(Constants.URL, Constants.APK_KEY, Constants.SECRET);
+				
+				AppPackageByDepartCodeGetRequest request = new AppPackageByDepartCodeGetRequest();
+				request.setDepartcode("1");
+				request.setTimestamp(System.currentTimeMillis());
+				
+				AppPackageByDepartCodeGetResponse response = dzc.execute(request);
+				
+				if (response.isSuccess()) {
+					
+				} else {
+					
+				}
+				
+				xml = response.getBody();
+				
 				SharedPreferences mSharedPreferences = getSharedPreferences(Constant.FILE_XML_SAVING, 0);
 				SharedPreferences.Editor mEditor = mSharedPreferences.edit();
 				mEditor.putString(Constant.KEY_XML_APPLICATION, xml);
@@ -171,48 +194,45 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		
 		Log.d(TAG, "xml applicatoin = " + xml);
 		
-		ParserBySAX parserBySAX = new ParserBySAX();
-		StringReader read = new StringReader(xml);
-		InputSource source = new InputSource(read);
-		List<CompAppInfo> compAppInfos = parserBySAX.getCompAppInfos(source);
+		JsonAppPackageResponse apr = JsonParser.jsonToObject(xml, JsonAppPackageResponse.class);
 		
-		for (CompAppInfo compAppInfo : compAppInfos) {
-			if (compAppInfo.getParentCategoryName().equals(mStringList)) {
-				Log.d(TAG, "CompAppInfo = " + compAppInfo.toString());
-				mApplicationList.add(compAppInfo);
+		for (JsonContent content : apr.content) {
+			if (content.appCategory.id == mCategoryId) {
+				mApplicationList = content.appList;
+				break;
 			}
 		}
-
+		
 		return mApplicationList;
 	}
 
-	private void launchApp(CompAppInfo appInfo) {
+	private void launchApp(JsonAppInfo appInfo) {
 		if (!checkTime(appInfo)) {
 			Toast.makeText(this, "对不起，该应用已过期", Toast.LENGTH_LONG).show();
 			return;
 		}
 		
-		if (PACKAGE_TYPE.AndroidEnterprisePkg.name().equalsIgnoreCase(appInfo.getPackageType())) {
+		if (PACKAGE_TYPE.AndroidEnterprisePkg.name().equalsIgnoreCase(appInfo.pkgType)) {
 			PackageManager packageManager = getPackageManager();
 			Intent mainIntent = new Intent(Intent.ACTION_MAIN);
 			mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
 			List<ResolveInfo> activityList = packageManager.queryIntentActivities(mainIntent, 0);
 			
-			Intent intent = getLaunchIntent(appInfo.getCFBundleIdentifier(), activityList);
+			Intent intent = getLaunchIntent(appInfo.pkgIdentifier, activityList);
 			
 			Log.d(TAG, "intent = " + intent);
 			if (intent == null) {
 				if (isFileExist(appInfo)) {
 					openFile(appInfo);
 				} else {
-					String url = appInfo.getPackageUrl();
+					String url = appInfo.pkgFilePath;
 					if (TextUtils.isEmpty(url)) {
 						Toast.makeText(this, "下载地址为空，暂无法下载。", Toast.LENGTH_LONG).show();
 					} else {
 						String fileName = url.substring(url.lastIndexOf("/"));
 						Log.d(TAG, "fileName = " + fileName);
 						Request request = new Request(Uri.parse(url));
-						request.setTitle(appInfo.getPackageName());
+						request.setTitle(appInfo.pkgName);
 						request.setDestinationInExternalPublicDir(FILE_PATH, fileName);
 						mEnqueue = mDownloadManager.enqueue(request);
 					}
@@ -221,18 +241,18 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			} else {
 				startActivity(intent);
 			}
-		} else if (PACKAGE_TYPE.MediaPkg.name().equalsIgnoreCase(appInfo.getPackageType())) {
+		} else if (PACKAGE_TYPE.MediaPkg.name().equalsIgnoreCase(appInfo.pkgType)) {
 			if (isFileExist(appInfo)) {
 				openFile(appInfo);
 			} else {
-				String url = appInfo.getPackageUrl();
+				String url = appInfo.pkgFilePath;
 				if (TextUtils.isEmpty(url)) {
 					Toast.makeText(this, "下载地址为空，暂无法下载。", Toast.LENGTH_LONG).show();
 				} else {
 					String fileName = url.substring(url.lastIndexOf("/"));
 					Log.d(TAG, "fileName = " + fileName);
 					Request request = new Request(Uri.parse(url));
-					request.setTitle(appInfo.getPackageName());
+					request.setTitle(appInfo.pkgName);
 					request.setDestinationInExternalPublicDir(FILE_PATH, fileName);
 					mEnqueue = mDownloadManager.enqueue(request);
 				}
@@ -253,9 +273,9 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		return null;
 	}
 	
-	private void openFile(CompAppInfo appInfo) {
+	private void openFile(JsonAppInfo appInfo) {
 		// TODO open file directy
-		String url = appInfo.getPackageUrl();
+		String url = appInfo.pkgFilePath;
 		String fileName = url.substring(url.lastIndexOf("/"));
 		File dir = Environment.getExternalStoragePublicDirectory(FILE_PATH);
 		File file = new File(dir, fileName);
@@ -275,8 +295,8 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		}
 	}
 	
-	private boolean isFileExist(CompAppInfo appInfo) {
-		String url = appInfo.getPackageUrl();
+	private boolean isFileExist(JsonAppInfo appInfo) {
+		String url = appInfo.pkgFilePath;
 		String fileName = url.substring(url.lastIndexOf("/"));
 		File dir = Environment.getExternalStoragePublicDirectory(FILE_PATH);
 		File file = new File(dir, fileName);
@@ -287,8 +307,8 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		return false;
 	}
 	
-	private boolean checkTime(CompAppInfo appInfo) {
-		Log.d(TAG, "appInfo.getStartDate() = " + appInfo.getStartDate());
+	private boolean checkTime(JsonAppInfo appInfo) {
+/*		Log.d(TAG, "appInfo.getStartDate() = " + appInfo.getStartDate());
 		Log.d(TAG, "appInfo.getEndDate() = " + appInfo.getEndDate());
 		if (TextUtils.isEmpty(appInfo.getStartDate()) || TextUtils.isEmpty(appInfo.getEndDate())) {
 			// TODO For test!
@@ -304,13 +324,14 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		if (currentTime >= startTime && currentTime <= endTime) {
 			return true;
 		}
-		return false;
+		return false;*/
+		return true;
 	}
 
 	private class ApplicationAdapter extends BaseAdapter {
 
 		private Context mContext;
-		private List<CompAppInfo> mAppInfoList;
+		private List<JsonAppInfo> mAppInfoList;
 		
 		private Integer[] mIconsArray = { 
 				R.drawable.icon_car, 
@@ -321,7 +342,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 				R.drawable.icon_car
 				};
 
-		public ApplicationAdapter(Context context, List<CompAppInfo> inputDataList) {
+		public ApplicationAdapter(Context context, List<JsonAppInfo> inputDataList) {
 			mContext = context;
 			mAppInfoList = inputDataList;
 		}
@@ -344,7 +365,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			ViewHolder holder;
-			final CompAppInfo appUnit = mAppInfoList.get(position);
+			final JsonAppInfo appUnit = mAppInfoList.get(position);
 			if (convertView == null) {
 				holder = new ViewHolder();
 				convertView = LayoutInflater.from(mContext).inflate(R.layout.application_item, null);
@@ -354,7 +375,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 				convertView.setBackgroundResource(R.drawable.bg_light_center_category_item_selector);
 			} 
 			holder = (ViewHolder) convertView.getTag();
-			holder.applicationName.setText(appUnit.getPackageName());
+			holder.applicationName.setText(appUnit.pkgName);
 			holder.applicationIcon.setBackgroundResource(mIconsArray[position % 6]);
 			return convertView;
 		}
@@ -367,7 +388,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		if(isDownloading(mApplicationList.get(position).getPackageUrl())) {
+		if(isDownloading(mApplicationList.get(position).pkgFilePath)) {
 			Toast.makeText(ApplicationActivity.this, "该应用已在下载列表或正在下载中...", Toast.LENGTH_LONG).show();
 			return;
 		}

@@ -1,19 +1,6 @@
 package cn.sh.mhedu.mhzx.mobiledesktop;
 
-import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.List;
-
-import org.ksoap2.SoapEnvelope;
-import org.ksoap2.serialization.SoapObject;
-import org.ksoap2.serialization.SoapPrimitive;
-import org.ksoap2.serialization.SoapSerializationEnvelope;
-import org.ksoap2.transport.AndroidHttpTransport;
-import org.xml.sax.InputSource;
-
-import com.justsy.zeus.api.DefaultZeusClient;
-import com.justsy.zeus.api.request.AppPackageByUserNameGetRequest;
-import com.justsy.zeus.api.response.AppPackageByUserNameGetResponse;
 
 import android.app.Activity;
 import android.content.Context;
@@ -28,14 +15,18 @@ import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
-import cn.sh.mhedu.mhzx.mobiledesktop.bean.AppPackageResponse;
-import cn.sh.mhedu.mhzx.mobiledesktop.bean.Category;
+import cn.sh.mhedu.mhzx.mobiledesktop.bean.JsonAppPackageResponse;
+import cn.sh.mhedu.mhzx.mobiledesktop.bean.JsonContent;
 import cn.sh.mhedu.mhzx.mobiledesktop.parser.JsonParser;
-import cn.sh.mhedu.mhzx.mobiledesktop.parser.ParserBySAX;
 import cn.sh.mhedu.mhzx.mobiledesktop.util.Constant;
 import cn.sh.mhedu.mhzx.mobiledesktop.utility.Constants;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemEvenView;
 import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryItemOddView;
+import cn.sh.mhedu.mhzx.mobiledesktop.view.CategoryTag;
+
+import com.justsy.zeus.api.DefaultZeusClient;
+import com.justsy.zeus.api.request.AppPackageByDepartCodeGetRequest;
+import com.justsy.zeus.api.response.AppPackageByDepartCodeGetResponse;
 
 public class CategoryActivity extends Activity {
 	private static final String TAG = "CategoryActivity";
@@ -44,7 +35,7 @@ public class CategoryActivity extends Activity {
 
 	private TextView mCategoryTitle;
 	private LinearLayout mContentLayout;
-	private List<Category> mCategoryList;
+	private List<JsonContent> mCategoryList;
 	private MyHandler mHandler;
 
 	@Override
@@ -66,7 +57,6 @@ public class CategoryActivity extends Activity {
 		mHandler = new MyHandler();
 		mCategoryTitle = (TextView) findViewById(R.id.category_title);
 		mContentLayout = (LinearLayout) findViewById(R.id.main_content);
-		mCategoryList = new ArrayList<Category>();
 		
 		new GetCategoryTask().execute();
 		Log.d(TAG, "onCreate end");
@@ -89,7 +79,10 @@ public class CategoryActivity extends Activity {
 				
 				for (int i = 0; i < 5; i++) {
 					if (position + i < totalSize) {
-						evenView.initCategoryIcon(i, mCategoryList.get(position + i).imageResId, mCategoryList.get(position + i).getName());
+						CategoryTag tag = new CategoryTag();
+						tag.id = mCategoryList.get(position + i).appCategory.id;
+						tag.name = mCategoryList.get(position + i).appCategory.categoryName;
+						evenView.initCategoryIcon(i, mCategoryList.get(position + i).imageResId, tag);
 					} else {
 						evenView.hideCategoryIcon(i);
 					}
@@ -102,7 +95,10 @@ public class CategoryActivity extends Activity {
 				
 				for (int i = 0; i < 4; i++) {
 					if (position + i < totalSize) {
-						oddView.initCategoryIcon(i, mCategoryList.get(position + i).imageResId, mCategoryList.get(position + i).getName());
+						CategoryTag tag = new CategoryTag();
+						tag.id = mCategoryList.get(position + i).appCategory.id;
+						tag.name = mCategoryList.get(position + i).appCategory.categoryName;
+						oddView.initCategoryIcon(i, mCategoryList.get(position + i).imageResId, tag);
 					} else {
 						oddView.hideCategoryIcon(i);
 					}
@@ -178,17 +174,17 @@ public class CategoryActivity extends Activity {
 		}
 	}
 
-	private List<Category> getCategories() throws Throwable {
+	private List<JsonContent> getCategories() throws Throwable {
 		String xml = "";
 		if (Connectivity.isNetworkConnected(this)) {
 			try {
 				DefaultZeusClient dzc = new DefaultZeusClient(Constants.URL, Constants.APK_KEY, Constants.SECRET);
 				
-				AppPackageByUserNameGetRequest request = new AppPackageByUserNameGetRequest();
-				request.setUsername("wanjiahua");
+				AppPackageByDepartCodeGetRequest request = new AppPackageByDepartCodeGetRequest();
+				request.setDepartcode("1");
 				request.setTimestamp(System.currentTimeMillis());
 				
-				AppPackageByUserNameGetResponse response = dzc.execute(request);
+				AppPackageByDepartCodeGetResponse response = dzc.execute(request);
 				
 				if (response.isSuccess()) {
 					
@@ -212,15 +208,10 @@ public class CategoryActivity extends Activity {
 		
 		Log.d(TAG, "xml = " + xml);
 		
-		AppPackageResponse apr = JsonParser.jsonToObject(xml, AppPackageResponse.class);
-		Log.d(TAG, "apr = " + apr.toString());
-		
-//		ParserBySAX parserBySAX = new ParserBySAX();
-//		StringReader read = new StringReader(xml);
-//		InputSource source = new InputSource(read);
-//		mCategoryList = parserBySAX.getCategories(source);
-		
+		JsonAppPackageResponse apr = JsonParser.jsonToObject(xml, JsonAppPackageResponse.class);
+		mCategoryList = apr.content;
 		return mCategoryList;
+		
 	}
 
 	private class MyHandler extends Handler {

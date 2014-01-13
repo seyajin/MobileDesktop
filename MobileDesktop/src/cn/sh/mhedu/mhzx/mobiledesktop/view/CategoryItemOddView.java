@@ -1,7 +1,10 @@
 package cn.sh.mhedu.mhzx.mobiledesktop.view;
 
+import java.io.Serializable;
+
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -46,54 +49,34 @@ public class CategoryItemOddView extends LinearLayout implements OnClickListener
 		
 	}
 	
-	private void initCategoryIconOne(int resId, String name) {
-		mCategoryIconOne.setCategoryIcon(resId);
-		mCategoryIconOne.setCategoryName(name);
-		mCategoryIconOne.setBackgroundResource(R.drawable.bg_dark_category_item_selector);
-		mCategoryIconOne.setOnClickListener(this);
-		mCategoryIconOne.setTag(name);
+	private void initCategoryIcon(CategoryIcon categoryIcon,int position, int resId, CategoryTag tag) {
+		categoryIcon.setCategoryIcon(resId);
+		categoryIcon.setCategoryName(tag.name);
+		if (position == 0 || position == 3) {
+			categoryIcon.setBackgroundResource(R.drawable.bg_dark_category_item_selector);
+		} else {
+			categoryIcon.setBackgroundResource(R.drawable.bg_light_category_item_selector);
+		}
+		categoryIcon.setOnClickListener(this);
+		categoryIcon.setTag(tag);
 	}
 	
-	private void initCategoryIconTwo(int resId, String name) {
-		mCategoryIconTwo.setCategoryIcon(resId);
-		mCategoryIconTwo.setCategoryName(name);
-		mCategoryIconTwo.setBackgroundResource(R.drawable.bg_light_category_item_selector);
-		mCategoryIconTwo.setOnClickListener(this);
-		mCategoryIconTwo.setTag(name);
-	}
-	
-	private void initCategoryIconThree(int resId, String name) {
-		mCategoryIconThree.setCategoryIcon(resId);
-		mCategoryIconThree.setCategoryName(name);
-		mCategoryIconThree.setBackgroundResource(R.drawable.bg_light_category_item_selector);
-		mCategoryIconThree.setOnClickListener(this);
-		mCategoryIconThree.setTag(name);
-	}
-	
-	private void initCategoryIconFour(int resId, String name) {
-		mCategoryIconFour.setCategoryIcon(resId);
-		mCategoryIconFour.setCategoryName(name);
-		mCategoryIconFour.setBackgroundResource(R.drawable.bg_dark_category_item_selector);
-		mCategoryIconFour.setOnClickListener(this);
-		mCategoryIconFour.setTag(name);
-	}
-	
-	public void initCategoryIcon(int position, int resId, String name) {
+	public void initCategoryIcon(int position, int resId, CategoryTag tag) {
 		switch (position) {
 		case 0:
-			initCategoryIconOne(resId, name);
+			initCategoryIcon(mCategoryIconOne, 0, resId, tag);
 			break;
 			
 		case 1:
-			initCategoryIconTwo(resId, name);
+			initCategoryIcon(mCategoryIconTwo, 1, resId, tag);
 			break;
 			
 		case 2:
-			initCategoryIconThree(resId, name);
+			initCategoryIcon(mCategoryIconThree, 2, resId, tag);
 			break;
 			
 		case 3:
-			initCategoryIconFour(resId, name);
+			initCategoryIcon(mCategoryIconFour, 3, resId, tag);
 			break;
 
 		default:
@@ -104,19 +87,19 @@ public class CategoryItemOddView extends LinearLayout implements OnClickListener
 	public void hideCategoryIcon(int position) {
 		switch (position) {
 		case 0:
-			hideCategoryIconOne();
+			hideCategoryIcon(mCategoryIconOne);
 			break;
 			
 		case 1:
-			hideCategoryIconTwo();
+			hideCategoryIcon(mCategoryIconTwo);
 			break;
 			
 		case 2:
-			hideCategoryIconThree();
+			hideCategoryIcon(mCategoryIconThree);
 			break;
 			
 		case 3:
-			hideCategoryIconFour();
+			hideCategoryIcon(mCategoryIconFour);
 			break;
 
 		default:
@@ -124,26 +107,16 @@ public class CategoryItemOddView extends LinearLayout implements OnClickListener
 		}
 	}
 	
-	private void hideCategoryIconOne() {
-		mCategoryIconOne.setVisibility(View.INVISIBLE);
-	}
-	
-	private void hideCategoryIconTwo() {
-		mCategoryIconTwo.setVisibility(View.INVISIBLE);
-	}
-	
-	private void hideCategoryIconThree() {
-		mCategoryIconThree.setVisibility(View.INVISIBLE);
-	}
-	
-	private void hideCategoryIconFour() {
-		mCategoryIconFour.setVisibility(View.INVISIBLE);
+	private void hideCategoryIcon(CategoryIcon categoryIcon) {
+		categoryIcon.setVisibility(View.INVISIBLE);
 	}
 
 	@Override
 	public void onClick(View v) {
 		Intent intent = new Intent(mContext, ApplicationActivity.class);
-		intent.putExtra("ListString", (String) v.getTag());
+		Bundle bundle = new Bundle();
+		bundle.putSerializable("tag", (Serializable) v.getTag());
+		intent.putExtra("ListString", bundle);
 		mContext.startActivity(intent);
 	}
 
