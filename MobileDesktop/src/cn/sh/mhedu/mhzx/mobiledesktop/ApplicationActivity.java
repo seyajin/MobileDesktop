@@ -71,7 +71,8 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	private ApplicationAdapter mApplicationAdapter;
 	private DownloadManager mDownloadManager;
 	private TextView mApplicationTitle;
-	private List<JsonAppInfo> mApplicationList = new ArrayList<JsonAppInfo>();
+	private List<JsonAppInfo> mAppList = new ArrayList<JsonAppInfo>();
+	private List<JsonAppInfo> mAppToRemoveList = new ArrayList<JsonAppInfo>();
 	
 	private long mCategoryId;
 	
@@ -158,10 +159,10 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			
 			mApplicationGridView = (GridView) findViewById(R.id.category_gridview);
 			mApplicationGridView.setOnItemClickListener(ApplicationActivity.this);
-			mApplicationAdapter = new ApplicationAdapter(ApplicationActivity.this, mApplicationList);
+			mApplicationAdapter = new ApplicationAdapter(ApplicationActivity.this, mAppList);
 			mApplicationGridView.setAdapter(mApplicationAdapter);
 			
-			if(mApplicationList.size() == 0) {
+			if(mAppList.size() == 0) {
 				Toast.makeText(ApplicationActivity.this, "该目录为空！", Toast.LENGTH_LONG).show();
 			}
 		}
@@ -243,18 +244,22 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		
 		for (JsonContent content : apr.content) {
 			if (content.appCategory.id == mCategoryId) {
-				mApplicationList = content.appList;
+				mAppList = content.appList;
 				break;
 			}
 		}
 		
-		for (JsonAppInfo appInfo : mApplicationList) {
+		for (JsonAppInfo appInfo : mAppList) {
 			if (appInfo.pkgType != null && appInfo.pkgType.toUpperCase().contains("IOS")) {
-				mApplicationList.remove(appInfo);
+				mAppToRemoveList.add(appInfo);
 			}
 		}
 		
-		return mApplicationList;
+		for (JsonAppInfo appInfo : mAppToRemoveList) {
+			mAppList.remove(appInfo);
+		}
+		
+		return mAppList;
 	}
 
 	private void launchApp(JsonAppInfo appInfo) {
@@ -487,7 +492,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		if(isDownloading(mApplicationList.get(position).pkgFilePath)) {
+		if(isDownloading(mAppList.get(position).pkgFilePath)) {
 			Toast.makeText(ApplicationActivity.this, "该应用已在下载列表或正在下载中...", Toast.LENGTH_LONG).show();
 			return;
 		}
@@ -538,7 +543,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			result = "On";
 			if (result instanceof String) {
 				try {
-					launchApp(mApplicationList.get(mPosition));
+					launchApp(mAppList.get(mPosition));
 				} catch (Exception e) {
 					Log.d(TAG, "exception = " + e.toString());
 				}
@@ -610,7 +615,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			// return;
 		}
 		
-		launchApp(mApplicationList.get(position));
+		launchApp(mAppList.get(position));
 	}
 	
 	private class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
