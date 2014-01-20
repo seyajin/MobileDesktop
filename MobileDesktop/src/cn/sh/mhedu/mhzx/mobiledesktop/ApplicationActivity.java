@@ -1,7 +1,10 @@
 package cn.sh.mhedu.mhzx.mobiledesktop;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringReader;
+import java.lang.ref.WeakReference;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,12 +21,18 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
+import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -67,17 +76,31 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	private long mCategoryId;
 	
 	private long mEnqueue;
-
+	
+	private GetAllAppTask mGetAllAppTask;
+	
+	private LruCache<String, Bitmap> mMemoryCache;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate start");
 		super.onCreate(savedInstanceState);
-		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		
+		final int maxMemory = (int) (Runtime.getRuntime().maxMemory() /1024);
+		
+		final int cacheSize = maxMemory / 8;
+		
+		mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
+			@Override
+			protected int sizeOf(String key, Bitmap bitmap) {
+				return bitmap.getByteCount() / 1024;
+			}
+		};
+		
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.gridview_layout);
-		
 		Bundle bundle = getIntent().getBundleExtra("ListString");
-		
 		CategoryTag tag = (CategoryTag) bundle.getSerializable("tag");
 		mCategoryId = tag.id;
 		
@@ -87,8 +110,27 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		mDownloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
 //		registerReceiver(new DownloadCompletedReceiver(), new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 		
-		new GetAllAppTask().execute();
+		mGetAllAppTask = new GetAllAppTask();
+		mGetAllAppTask.execute();
 		Log.d(TAG, "onCreate end");
+	}
+	
+	private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
+		if (getBitmapFromMemoryCache(key) == null) {
+			mMemoryCache.put(key, bitmap);
+		}
+	}
+	
+	private Bitmap getBitmapFromMemoryCache(String key) {
+		return mMemoryCache.get(key);
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (mGetAllAppTask != null) {
+			mGetAllAppTask.cancel(true);
+		}
 	}
 	
 	private class GetAllAppTask extends AsyncTask<Void, Void, Object> {
@@ -110,6 +152,10 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		
 		@Override
 		protected void onPostExecute(Object result) {
+			if (isCancelled()) {
+				return;
+			}
+			
 			mApplicationGridView = (GridView) findViewById(R.id.category_gridview);
 			mApplicationGridView.setOnItemClickListener(ApplicationActivity.this);
 			mApplicationAdapter = new ApplicationAdapter(ApplicationActivity.this, mApplicationList);
@@ -147,7 +193,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 							i.setDataAndType(Uri.parse(localUrl), MIMEType); 
 							context.startActivity(i);
 						} catch (Exception e) {
-							// TODO: handle exception
+							// handle exception
 							Toast.makeText(ApplicationActivity.this, "对不起，无法打开该应用", Toast.LENGTH_LONG).show();
 						}
 						
@@ -162,7 +208,6 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	public List<JsonAppInfo> getAllApps() throws Throwable {
 		String xml = "";
 		if (Connectivity.isNetworkConnected(this)) {
-
 			try {
 				DefaultZeusClient dzc = new DefaultZeusClient(Constants.URL, Constants.APK_KEY, Constants.SECRET);
 				
@@ -203,6 +248,12 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			}
 		}
 		
+		for (JsonAppInfo appInfo : mApplicationList) {
+			if (appInfo.pkgType != null && appInfo.pkgType.toUpperCase().contains("IOS")) {
+				mApplicationList.remove(appInfo);
+			}
+		}
+		
 		return mApplicationList;
 	}
 
@@ -212,7 +263,54 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			return;
 		}
 		
-		if (PACKAGE_TYPE.AndroidEnterprisePkg.name().equalsIgnoreCase(appInfo.pkgType)) {
+		if (appInfo.pkgFilePath.indexOf("apk") != -1) {
+			PackageManager packageManager = getPackageManager();
+			Intent mainIntent = new Intent(Intent.ACTION_MAIN);
+			mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+			List<ResolveInfo> activityList = packageManager.queryIntentActivities(mainIntent, 0);
+			
+			Intent intent = getLaunchIntent(appInfo.pkgIdentifier, activityList);
+			
+			Log.d(TAG, "intent = " + intent);
+			if (intent == null) {
+				if (isFileExist(appInfo)) {
+					openFile(appInfo);
+				} else {
+					String url = appInfo.pkgFilePath;
+					if (TextUtils.isEmpty(url)) {
+						Toast.makeText(this, "下载地址为空，暂无法下载。", Toast.LENGTH_LONG).show();
+					} else {
+						String fileName = url.substring(url.lastIndexOf("/"));
+						Log.d(TAG, "fileName = " + fileName);
+						Request request = new Request(Uri.parse(url));
+						request.setTitle(appInfo.pkgName);
+						request.setDestinationInExternalPublicDir(FILE_PATH, fileName);
+						mEnqueue = mDownloadManager.enqueue(request);
+					}
+				}
+				
+			} else {
+				startActivity(intent);
+			}
+		} else {
+			if (isFileExist(appInfo)) {
+				openFile(appInfo);
+			} else {
+				String url = appInfo.pkgFilePath;
+				if (TextUtils.isEmpty(url)) {
+					Toast.makeText(this, "下载地址为空，暂无法下载。", Toast.LENGTH_LONG).show();
+				} else {
+					String fileName = url.substring(url.lastIndexOf("/"));
+					Log.d(TAG, "fileName = " + fileName);
+					Request request = new Request(Uri.parse(url));
+					request.setTitle(appInfo.pkgName);
+					request.setDestinationInExternalPublicDir(FILE_PATH, fileName);
+					mEnqueue = mDownloadManager.enqueue(request);
+				}
+			}
+		}
+		
+/*		if (PACKAGE_TYPE.AndroidEnterprisePkg.name().equalsIgnoreCase(appInfo.pkgType)) {
 			PackageManager packageManager = getPackageManager();
 			Intent mainIntent = new Intent(Intent.ACTION_MAIN);
 			mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -260,7 +358,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		} else {
 			// DO nothing
 			Toast.makeText(this, "对不起，该类型应用不支持", Toast.LENGTH_LONG).show();
-		}
+		}*/
 	}
 	
 	private Intent getLaunchIntent(String packageName, List<ResolveInfo> activityList) {
@@ -274,7 +372,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 	}
 	
 	private void openFile(JsonAppInfo appInfo) {
-		// TODO open file directy
+		// open file directory
 		String url = appInfo.pkgFilePath;
 		String fileName = url.substring(url.lastIndexOf("/"));
 		File dir = Environment.getExternalStoragePublicDirectory(FILE_PATH);
@@ -311,7 +409,7 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 /*		Log.d(TAG, "appInfo.getStartDate() = " + appInfo.getStartDate());
 		Log.d(TAG, "appInfo.getEndDate() = " + appInfo.getEndDate());
 		if (TextUtils.isEmpty(appInfo.getStartDate()) || TextUtils.isEmpty(appInfo.getEndDate())) {
-			// TODO For test!
+			// For test!
 			return true;
 		}
 		
@@ -376,7 +474,8 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			} 
 			holder = (ViewHolder) convertView.getTag();
 			holder.applicationName.setText(appUnit.pkgName);
-			holder.applicationIcon.setBackgroundResource(mIconsArray[position % 6]);
+			holder.applicationIcon.setImageResource(mIconsArray[position % 6]);
+			loadBitmap(appUnit.pkgHeadpicPath, holder.applicationIcon);
 			return convertView;
 		}
 	}
@@ -457,7 +556,6 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 			String deviceId = Settings.System.getString(getContentResolver(),Settings.System.ANDROID_ID);
 			Log.d(TAG, "deviceId = " + deviceId);
 
-
 			try {
 //				xml = soapPrimitive.toString();
 				SharedPreferences mSharedPreferences = getSharedPreferences(Constant.FILE_DEVICE_STATUS, Context.MODE_PRIVATE);
@@ -513,6 +611,97 @@ public class ApplicationActivity extends Activity implements OnItemClickListener
 		}
 		
 		launchApp(mApplicationList.get(position));
+	}
+	
+	private class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
+		private final WeakReference<ImageView> imageViewReference;
+		private String imageUrl;
+		
+		public BitmapWorkerTask(ImageView imageView) {
+			imageViewReference  = new WeakReference<ImageView>(imageView);
+		}
+
+		@Override
+		protected Bitmap doInBackground(String... params) {
+			imageUrl = params[0];
+			try {
+				URL url = new URL(imageUrl);
+				return BitmapFactory.decodeStream(url.openConnection().getInputStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(Bitmap bitmap) {
+			if (isCancelled()) {
+				bitmap = null;
+			}
+			
+			if (imageViewReference != null && bitmap != null) {
+				final ImageView imageView = imageViewReference.get();
+				final BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
+				if (this == bitmapWorkerTask && imageView != null) {
+					imageView.setImageBitmap(bitmap);
+				}
+			}
+		}
+		
+	}
+	
+	private void loadBitmap(String url, ImageView imageView) {
+		
+		final Bitmap bitmap = getBitmapFromMemoryCache(url);
+		
+		if (bitmap != null) {
+			imageView.setImageBitmap(bitmap);
+		} else {
+			if (cancelPotentialWork(url, imageView)) {
+				// BitmapDrawable bitmapDrawable = (BitmapDrawable) getResources().getDrawable(R.drawable.icon_line_one_1);
+				final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
+				final AsyncDrawable asyncDrawable = new AsyncDrawable(getResources(), null, task);
+				imageView.setImageDrawable(asyncDrawable);
+				task.execute(url);
+			}
+		}
+		
+	}
+	
+	private boolean cancelPotentialWork(String url, ImageView imageView) {
+		final BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
+		if (bitmapWorkerTask != null && url != null) {
+			if (!url.equalsIgnoreCase(bitmapWorkerTask.imageUrl)) {
+				return bitmapWorkerTask.cancel(true);
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	private BitmapWorkerTask getBitmapWorkerTask(ImageView imageView) {
+		if (imageView != null) {
+			final Drawable drawable = imageView.getDrawable();
+			if (drawable instanceof AsyncDrawable) {
+				final AsyncDrawable asyncDrawable = (AsyncDrawable) drawable;
+				return asyncDrawable.getBitmapWorkerTask();
+			}
+		}
+		return null;
+	}
+	
+	static class AsyncDrawable extends BitmapDrawable {
+		final WeakReference<BitmapWorkerTask> taskReference;
+		
+		public AsyncDrawable(Resources res, Bitmap bitmap, BitmapWorkerTask bitmapWorkerTask) {
+			super(res, bitmap);
+			taskReference = new WeakReference<ApplicationActivity.BitmapWorkerTask>(bitmapWorkerTask);
+		}
+		
+		public BitmapWorkerTask getBitmapWorkerTask() {
+			return taskReference.get();
+		}
 	}
 	
 }
