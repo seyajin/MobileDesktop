@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\Users\\user\\git\\MobileDesktop\\MobileDesktop\\src\\cn\\sh\\mhedu\\mhzx\\mobiledesktop\\ISmsService.aidl
+ * Original file: D:\\git\\MobileDesktop\\MobileDesktop\\src\\cn\\sh\\mhedu\\mhzx\\mobiledesktop\\ISmsService.aidl
  */
 package cn.sh.mhedu.mhzx.mobiledesktop;
 public interface ISmsService extends android.os.IInterface
